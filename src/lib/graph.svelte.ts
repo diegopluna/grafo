@@ -1,16 +1,39 @@
 import { MarkerType, type Edge, type Node } from "@xyflow/svelte";
 import { getContext, setContext } from "svelte";
 import { writable, derived, get } from "svelte/store";
+import { forceSimulation, forceLink, forceManyBody, forceCenter } from 'd3-force';
+
 
 export class Graph {
   nodes = writable<Node[]>([])
   edges = writable<Edge[]>([])
   isDirectional = writable<boolean>(false)
   isValueWeighted = writable<boolean>(true)
+  simulation: any
+
+  constructor() {
+    this.simulation = forceSimulation()
+    .force('charge', forceManyBody().strength(-300))
+    .force('center', forceCenter(250, 250))
+    .force('link', forceLink().id((d: any) => d.id).distance(100))
+    .on('tick', () => {
+      this.nodes.update(nodes => {
+        nodes.forEach(node => {
+          if (node.position && (node as any).x && (node as any).y) {
+            node.position.x = (node as any).x
+            node.position.y = (node as any).y
+          }
+        })
+        return nodes
+      })
+    })
+  }
 
   clearGraph() {
     this.nodes.set([])
     this.edges.set([])
+    this.simulation.nodes([])
+    this.simulation.force('link').links([])
   }
 
   addNode(nodeName: string) {
@@ -18,18 +41,23 @@ export class Graph {
       if(nodes.some(node => node.id === nodeName)) {
         return nodes
       }
-      return [...nodes, {
+      const newNodes = [...nodes, {
         id: nodeName,
         data: {
           label: nodeName
         },
         position: {
-          x: Math.random() * 500,
-          y: Math.random() * 500
+          x: 0,
+          y: 0
         },
         connectable: false,
         deletable: true,
       }]
+
+      this.simulation.nodes(newNodes)
+      this.simulation.alpha(1).restart()
+
+      return newNodes
     })
   }
 
