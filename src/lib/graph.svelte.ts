@@ -6,6 +6,7 @@ export class Graph {
   nodes = writable<Node[]>([])
   edges = writable<Edge[]>([])
   isDirectional = writable<boolean>(false)
+  isValueWeighted = writable<boolean>(true)
 
   clearGraph() {
     this.nodes.set([])
@@ -52,7 +53,7 @@ export class Graph {
           id: `${source}-${target}`,
           source,
           target,
-          label: weight.toString(),
+          label: get(this.isValueWeighted) ? weight.toString(): undefined,
           markerEnd: get(this.isDirectional) ? {
             type: MarkerType.ArrowClosed,
           } : undefined,
@@ -81,6 +82,14 @@ export class Graph {
         }
       })
     })
+  }
+
+  toggleValueWeighted(value: boolean) {
+    this.isValueWeighted.update(() => {
+      return value
+    })
+
+    this.clearGraph()
   }
 
   getAdjacentVertices = (nodeId: string) => {
@@ -169,6 +178,46 @@ export class Graph {
     return {
       cost: distances[end],
       path
+    }
+  }
+
+  checkEulerian(): boolean {
+    const nodes = get(this.nodes)
+    const edges = get(this.edges)
+    const isDirectional = get(this.isDirectional)
+
+    if (isDirectional) {
+      const degrees = new Map<string, { in: number, out: number }>();
+
+      nodes.forEach(node => {
+        degrees.set(node.id, { in: 0, out: 0 });
+      });
+
+      edges.forEach(edge => {
+        const source = degrees.get(edge.source);
+        const target = degrees.get(edge.target);
+
+        if (source) source.out++;
+        if (target) target.in++;
+      })
+
+      return Array.from(degrees.values()).every(({ in: inDegree, out: outDegree }) => inDegree === outDegree);
+    } else {
+      const degrees = new Map<string, number>();
+
+      nodes.forEach(node => {
+        degrees.set(node.id, 0);
+      });
+
+      edges.forEach(edge => {
+        const source = degrees.get(edge.source);
+        const target = degrees.get(edge.target);
+
+        if (source !== undefined) degrees.set(edge.source, source + 1);
+        if (target !== undefined) degrees.set(edge.target, target + 1);
+      })
+
+      return Array.from(degrees.values()).every(degree => degree % 2 === 0);
     }
   }
 }

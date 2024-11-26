@@ -13,6 +13,8 @@
   let target = writable('')
   let weight = $state(1)
 
+  const isValueWeighted = derived(graph.isValueWeighted, $isValueWeighted => $isValueWeighted)
+
   const possibleSources = derived([graph.nodes, target], ([$nodes, $target]) => $nodes.filter(n => n.id !== $target))
   const possibleTargets = derived([graph.nodes, source], ([$nodes, $source]) => $nodes.filter(n => n.id !== $source))
 
@@ -66,10 +68,12 @@
           </Select.Root>
         </div>
       </div>
-      <div>
-        <Label for="edge-weight">Peso da Aresta</Label>
-        <Input id="edge-weight" type="number" bind:value={weight} min={1} />
-      </div>
+      {#if $isValueWeighted}
+        <div>
+          <Label for="edge-weight">Peso da Aresta</Label>
+          <Input id="edge-weight" type="number" bind:value={weight} min={1} />
+        </div>
+      {/if}
       <Button disabled={
         $source === '' ||
         $target === '' ||
