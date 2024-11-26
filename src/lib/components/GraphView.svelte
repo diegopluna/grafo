@@ -15,7 +15,7 @@
     <CardTitle>Visualização do Grafo</CardTitle>
   </CardHeader>
   <CardContent>
-      <div class="w-full h-[500px] border border-gray-200 rounded-lg p-4">
+      <div class="w-full h-[800px] border border-gray-200 rounded-lg p-4">
         <SvelteFlow 
           nodes={graph.nodes} 
           edges={graph.edges} 
