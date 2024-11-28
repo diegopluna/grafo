@@ -142,10 +142,22 @@ export class Graph {
   }
 
   areVerticesAdjacent = (vertexA: string, vertexB: string) => {
-    return get(this.edges).some(edge => 
-      (edge.source === vertexA && edge.target === vertexB) ||
-      (!get(this.isDirectional) && edge.source === vertexB && edge.target === vertexA)
+    const edges = get(this.edges)
+    const isDirectional = get(this.isDirectional)
+
+    const nodes = get(this.nodes)
+    if (!nodes.find(node => node.id === vertexA) || !nodes.find(node => node.id === vertexB)) {
+      return false
+    }
+
+    const directConnection = edges.find(edge => edge.source === vertexA && edge.target === vertexB)
+
+    const reverseConnection = edges.some(edge =>
+      edge.source === vertexB && edge.target === vertexA
     )
+
+    return isDirectional ? directConnection: (directConnection || reverseConnection)
+
   }
 
   findShortestPath = (start: string, end: string) => {
@@ -160,29 +172,31 @@ export class Graph {
     distances[start] = 0
 
     while (unvisited.size > 0) {
-      const currentNode = Array.from(unvisited).reduce((minNode, node) => 
-        distances[node] < distances[minNode] ? node : minNode
-      )
+      let currentNode = null
+      let minDistance = Infinity
 
-      if (currentNode === end) {
-        break
+      for (const node of unvisited) {
+        if (distances[node] < minDistance) {
+          currentNode = node
+          minDistance = distances[node]
+        }
       }
+
+      if (currentNode === null || currentNode === end) break;
 
       unvisited.delete(currentNode)
 
-      get(this.edges).forEach(edge => {
-        if (edge.source === currentNode && unvisited.has(edge.target)) {
-          const newDistance = distances[currentNode] + parseInt(edge.label!)
-          if (newDistance < distances[edge.target]) {
-            distances[edge.target] = newDistance
-            previous[edge.target] = currentNode
-          }
+      const edges = get(this.edges)
 
-          if(!get(this.isDirectional) && edge.target === currentNode && unvisited.has(edge.source)) {
-            const newDistance = distances[currentNode] + parseInt(edge.label!)
-            if (newDistance < distances[edge.source]) {
-              distances[edge.source] = newDistance
-              previous[edge.source] = currentNode
+      edges.forEach(edge => {
+        if (edge.source === currentNode || (!get(this.isDirectional) && edge.target === currentNode)) {
+          const neighbor = edge.source === currentNode ? edge.target : edge.source
+          if (unvisited.has(neighbor)) {
+            const weight = parseInt(edge.label || '0')
+            const newDistance = distances[currentNode] + weight
+            if (newDistance < distances[neighbor]) {
+              distances[neighbor] = newDistance
+              previous[neighbor] = currentNode
             }
           }
         }
@@ -191,21 +205,22 @@ export class Graph {
 
     const path: string[] = []
     let current = end
-    while (current) {
+    while (current && previous[current]) {
       path.unshift(current)
       current = previous[current] || ''
     }
 
-    if (path[0] !== start) {
+    if (current === start) {
+      path.unshift(start)
       return {
-        cost: Infinity,
-        path: []
+        cost: distances[end],
+        path
       }
     }
 
     return {
-      cost: distances[end],
-      path
+      cost: Infinity,
+      path: []
     }
   }
 

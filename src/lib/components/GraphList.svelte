@@ -17,7 +17,7 @@
     <CardTitle>Lista de Elementos</CardTitle>
   </CardHeader>
   <CardContent>
-    <div class="grid md:grid-cols-2 gap-8 mb-8">
+    <div class="grid md:grid-cols-2 gap-8 mb-8 overflow-y-auto h-[300px]" >
       <div>
         <h3>Vértices</h3>
         <ul>
